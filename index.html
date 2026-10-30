@@ -126,11 +126,21 @@
                 <p id="newRecordBadge" class="hidden text-xs text-amber-300 font-bold animate-pulse mt-1">★ NEW HIGH SCORE! ★</p>
             </div>
 
+            <!-- モード選択ボタン -->
+            <div class="flex items-center justify-center gap-3 mb-4 w-full max-w-md">
+                <button id="mode1Btn" class="arcade-btn active flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold tracking-wider cursor-pointer">
+                    MODE 1 [標準配置]
+                </button>
+                <button id="mode2Btn" class="arcade-btn flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold tracking-wider cursor-pointer">
+                    MODE 2 [左右入替]
+                </button>
+            </div>
+
             <!-- ルール＆操作説明カード -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left bg-slate-900/80 border border-slate-800 p-4 rounded-xl max-w-xl w-full mb-6 text-xs sm:text-sm">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left bg-slate-900/80 border border-slate-800 p-4 rounded-xl max-w-xl w-full mb-5 text-xs sm:text-sm">
                 <div>
-                    <h2 class="text-sky-400 font-bold mb-2 border-b border-slate-800 pb-1">【キーボード操作】</h2>
-                    <ul class="space-y-1.5 text-slate-200">
+                    <h2 id="controlsHeading" class="text-sky-400 font-bold mb-2 border-b border-slate-800 pb-1">【キーボード操作 (MODE 1)】</h2>
+                    <ul id="controlsList" class="space-y-1.5 text-slate-200">
                         <li><span class="inline-block w-24 text-rose-400 font-bold">[Q] キー</span>：ミサイル発射</li>
                         <li><span class="inline-block w-24 text-amber-400 font-bold">[R] キー</span>：高速移動 (押下中2倍速)</li>
                         <li><span class="inline-block w-24 text-sky-300 font-bold">[U] / [←]</span>：左回転</li>
@@ -149,7 +159,7 @@
                             <span class="retro-font text-xs text-fuchsia-300">50 PTS</span>
                         </li>
                         <li class="text-slate-400 text-xs pt-1">※宇宙船は常時直進し、画面端で反対側へワープします。UFOと衝突すると即ゲームオーバー！</li>
-                        <li class="text-amber-300 text-xs pt-0.5">※[Q+R]同時押しでスタート / [BS]キーでタイトルへ戻る</li>
+                        <li id="startHintText" class="text-amber-300 text-xs pt-0.5">※[Q+R]同時押しでスタート / [BS]キーでタイトルへ戻る</li>
                     </ul>
                 </div>
             </div>
@@ -220,27 +230,27 @@
         <div class="flex items-center gap-2 sm:gap-3">
             <button id="btnFire" class="arcade-btn arcade-btn-red px-4 py-3 sm:px-6 sm:py-3.5 rounded-xl font-bold text-xs sm:text-sm flex flex-col items-center min-w-[76px] sm:min-w-[100px]">
                 <span>FIRE</span>
-                <span class="text-[10px] text-rose-200 opacity-80 mt-0.5">[Q]</span>
+                <span id="labelFireKey" class="text-[10px] text-rose-200 opacity-80 mt-0.5">[Q]</span>
             </button>
             <button id="btnBoost" class="arcade-btn arcade-btn-amber px-4 py-3 sm:px-6 sm:py-3.5 rounded-xl font-bold text-xs sm:text-sm flex flex-col items-center min-w-[76px] sm:min-w-[100px]">
                 <span>BOOST x2</span>
-                <span class="text-[10px] text-amber-200 opacity-80 mt-0.5">[R]</span>
+                <span id="labelBoostKey" class="text-[10px] text-amber-200 opacity-80 mt-0.5">[R]</span>
             </button>
         </div>
 
         <div class="hidden md:flex flex-col items-center text-xs text-slate-400">
-            <span>等速直進運動 / 画面端ワープ</span>
+            <span id="footerModeDisplay" class="text-sky-400 font-bold">MODE 1 : 等速直進運動 / 画面端ワープ</span>
             <span class="text-[11px] text-slate-500">UFO衝突でゲームオーバー・制限時間60秒</span>
         </div>
 
         <div class="flex items-center gap-2 sm:gap-3">
             <button id="btnLeft" class="arcade-btn px-4 py-3 sm:px-6 sm:py-3.5 rounded-xl font-bold text-xs sm:text-sm flex flex-col items-center min-w-[76px] sm:min-w-[100px]">
                 <span>◀ LEFT</span>
-                <span class="text-[10px] text-sky-200 opacity-80 mt-0.5">[U / ←]</span>
+                <span id="labelLeftKey" class="text-[10px] text-sky-200 opacity-80 mt-0.5">[U / ←]</span>
             </button>
             <button id="btnRight" class="arcade-btn px-4 py-3 sm:px-6 sm:py-3.5 rounded-xl font-bold text-xs sm:text-sm flex flex-col items-center min-w-[76px] sm:min-w-[100px]">
                 <span>RIGHT ▶</span>
-                <span class="text-[10px] text-sky-200 opacity-80 mt-0.5">[P / →]</span>
+                <span id="labelRightKey" class="text-[10px] text-sky-200 opacity-80 mt-0.5">[P / →]</span>
             </button>
         </div>
     </footer>
@@ -400,6 +410,16 @@
         const shipSpeedVal = document.getElementById('shipSpeedVal');
         const turnSpeedVal = document.getElementById('turnSpeedVal');
         const missileSpeedVal = document.getElementById('missileSpeedVal');
+        const mode1Btn = document.getElementById('mode1Btn');
+        const mode2Btn = document.getElementById('mode2Btn');
+        const controlsHeading = document.getElementById('controlsHeading');
+        const controlsList = document.getElementById('controlsList');
+        const startHintText = document.getElementById('startHintText');
+        const labelFireKey = document.getElementById('labelFireKey');
+        const labelBoostKey = document.getElementById('labelBoostKey');
+        const labelLeftKey = document.getElementById('labelLeftKey');
+        const labelRightKey = document.getElementById('labelRightKey');
+        const footerModeDisplay = document.getElementById('footerModeDisplay');
 
         // ボタン要素
         const btnFire = document.getElementById('btnFire');
@@ -459,6 +479,7 @@
 
         // ゲーム状態変数
         let gameState = 'TITLE'; // 'TITLE', 'COUNTDOWN', 'PLAYING', 'ENDED'
+        let controlMode = 1;     // 1: MODE 1 (Q:発射, R:高速, U:左, P:右), 2: MODE 2 (Q:左, R:右, U:発射, P:高速)
         let score = 0;
         let highScore = 0;
         let timeLeft = GAME_DURATION;
@@ -502,6 +523,59 @@
         let particles = [];
         let shockwaves = [];
         let floatingTexts = [];
+
+        /**
+         * モード切替処理 (MODE 1 / MODE 2)
+         */
+        function setControlMode(mode) {
+            controlMode = mode;
+            mode1Btn.classList.toggle('active', mode === 1);
+            mode2Btn.classList.toggle('active', mode === 2);
+
+            if (mode === 1) {
+                controlsHeading.textContent = '【キーボード操作 (MODE 1)】';
+                controlsList.innerHTML = `
+                    <li><span class="inline-block w-24 text-rose-400 font-bold">[Q] キー</span>：ミサイル発射</li>
+                    <li><span class="inline-block w-24 text-amber-400 font-bold">[R] キー</span>：高速移動 (押下中2倍速)</li>
+                    <li><span class="inline-block w-24 text-sky-300 font-bold">[U] / [←]</span>：左回転</li>
+                    <li><span class="inline-block w-24 text-sky-300 font-bold">[P] / [→]</span>：右回転</li>
+                `;
+                labelFireKey.textContent = '[Q]';
+                labelBoostKey.textContent = '[R]';
+                labelLeftKey.textContent = '[U / ←]';
+                labelRightKey.textContent = '[P / →]';
+                footerModeDisplay.textContent = 'MODE 1 : 等速直進運動 / 画面端ワープ';
+                startHintText.textContent = '※[Q+R]同時押しでスタート / [BS]キーでタイトルへ戻る';
+            } else {
+                controlsHeading.textContent = '【キーボード操作 (MODE 2)】';
+                controlsList.innerHTML = `
+                    <li><span class="inline-block w-24 text-sky-300 font-bold">[Q] / [←]</span>：左回転</li>
+                    <li><span class="inline-block w-24 text-sky-300 font-bold">[R] / [→]</span>：右回転</li>
+                    <li><span class="inline-block w-24 text-rose-400 font-bold">[U] キー</span>：ミサイル発射</li>
+                    <li><span class="inline-block w-24 text-amber-400 font-bold">[P] キー</span>：高速移動 (押下中2倍速)</li>
+                `;
+                labelFireKey.textContent = '[U]';
+                labelBoostKey.textContent = '[P]';
+                labelLeftKey.textContent = '[Q / ←]';
+                labelRightKey.textContent = '[R / →]';
+                footerModeDisplay.textContent = 'MODE 2 : 等速直進運動 / 画面端ワープ';
+                startHintText.textContent = '※[U+P]同時押しでスタート / [BS]キーでタイトルへ戻る';
+            }
+
+            const startKeysLabel = mode === 1 ? 'Q+R' : 'U+P';
+            startBtn.textContent = gameState === 'ENDED'
+                ? `PLAY AGAIN [${startKeysLabel} / SPACE / CLICK]`
+                : `GAME START [${startKeysLabel} / SPACE / CLICK]`;
+        }
+
+        mode1Btn.addEventListener('click', () => {
+            sound.init();
+            setControlMode(1);
+        });
+        mode2Btn.addEventListener('click', () => {
+            sound.init();
+            setControlMode(2);
+        });
 
         // プレイヤー宇宙船オブジェクト
         const ship = {
@@ -768,7 +842,8 @@
             overlayTitle.textContent = 'COMPUTER SPACE';
             overlaySubtitle.textContent = '1分間でUFOを撃破しハイスコアを目指せ！';
             resultBox.classList.add('hidden');
-            startBtn.textContent = 'GAME START [Q+R / SPACE / CLICK]';
+            const startKeysLabel = controlMode === 1 ? 'Q+R' : 'U+P';
+            startBtn.textContent = `GAME START [${startKeysLabel} / SPACE / CLICK]`;
             overlayScreen.classList.remove('hidden');
         }
 
@@ -812,7 +887,8 @@
             }
 
             resultBox.classList.remove('hidden');
-            startBtn.textContent = 'PLAY AGAIN [Q+R / SPACE / CLICK]';
+            const startKeysLabel = controlMode === 1 ? 'Q+R' : 'U+P';
+            startBtn.textContent = `PLAY AGAIN [${startKeysLabel} / SPACE / CLICK]`;
             overlayScreen.classList.remove('hidden');
         }
 
@@ -848,27 +924,46 @@
                 pressedKeys[key] = true;
             }
 
-            // Q＋Rキーの同時押し、またはスペース/エンターキーでゲームスタート
+            // モード1はQ＋R、モード2はU＋Pの同時押し、またはスペース/エンターキーでゲームスタート
             if (gameState === 'TITLE' || gameState === 'ENDED') {
-                const isQRPressed = pressedKeys.q && pressedKeys.r;
-                if (isQRPressed || e.code === 'Space' || e.code === 'Enter') {
+                const isComboPressed = controlMode === 1
+                    ? (pressedKeys.q && pressedKeys.r)
+                    : (pressedKeys.u && pressedKeys.p);
+                if (isComboPressed || e.code === 'Space' || e.code === 'Enter') {
                     e.preventDefault();
                     startGame();
                     return;
                 }
             }
 
-            if (key === 'q') {
-                inputState.fire = true;
-                fireMissile();
-            } else if (key === 'r') {
-                inputState.boost = true;
-            } else if (key === 'u' || e.key === 'ArrowLeft') {
-                e.preventDefault();
-                inputState.left = true;
-            } else if (key === 'p' || e.key === 'ArrowRight') {
-                e.preventDefault();
-                inputState.right = true;
+            if (controlMode === 1) {
+                // MODE 1: Q=ミサイル, R=高速移動, U/←=左回転, P/→=右回転
+                if (key === 'q') {
+                    inputState.fire = true;
+                    fireMissile();
+                } else if (key === 'r') {
+                    inputState.boost = true;
+                } else if (key === 'u' || e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    inputState.left = true;
+                } else if (key === 'p' || e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    inputState.right = true;
+                }
+            } else {
+                // MODE 2: Q/←=左回転, R/→=右回転, U=ミサイル, P=高速移動
+                if (key === 'q' || e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    inputState.left = true;
+                } else if (key === 'r' || e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    inputState.right = true;
+                } else if (key === 'u') {
+                    inputState.fire = true;
+                    fireMissile();
+                } else if (key === 'p') {
+                    inputState.boost = true;
+                }
             }
             updateButtonVisuals();
         });
@@ -878,14 +973,26 @@
             if (key === 'q' || key === 'r' || key === 'u' || key === 'p') {
                 pressedKeys[key] = false;
             }
-            if (key === 'q') {
-                inputState.fire = false;
-            } else if (key === 'r') {
-                inputState.boost = false;
-            } else if (key === 'u' || e.key === 'ArrowLeft') {
-                inputState.left = false;
-            } else if (key === 'p' || e.key === 'ArrowRight') {
-                inputState.right = false;
+            if (controlMode === 1) {
+                if (key === 'q') {
+                    inputState.fire = false;
+                } else if (key === 'r') {
+                    inputState.boost = false;
+                } else if (key === 'u' || e.key === 'ArrowLeft') {
+                    inputState.left = false;
+                } else if (key === 'p' || e.key === 'ArrowRight') {
+                    inputState.right = false;
+                }
+            } else {
+                if (key === 'q' || e.key === 'ArrowLeft') {
+                    inputState.left = false;
+                } else if (key === 'r' || e.key === 'ArrowRight') {
+                    inputState.right = false;
+                } else if (key === 'u') {
+                    inputState.fire = false;
+                } else if (key === 'p') {
+                    inputState.boost = false;
+                }
             }
             updateButtonVisuals();
         });
