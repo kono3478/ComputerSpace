@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>COMPUTER SPACE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DotGothic16&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #050508;
+            color: #e0f2fe;
+            font-family: 'DotGothic16', monospace;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .retro-font {
+            font-family: 'Press Start 2P', monospace;
+        }
+        /* CRTモニター風のエフェクト */
+        .crt-container {
+            position: relative;
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.3), inset 0 0 30px rgba(56, 189, 248, 0.2);
+            border: 4px solid #1e293b;
+            border-radius: 16px;
+            overflow: hidden;
+            background: radial-gradient(circle at center, #0c1424 0%, #020408 100%);
+        }
+        .crt-container::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.35) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.04), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.04));
+            z-index: 10;
+            background-size: 100% 3px, 6px 100%;
+            pointer-events: none;
+        }
+        .glow-text {
+            text-shadow: 0 0 8px rgba(56, 189, 248, 0.8), 0 0 16px rgba(56, 189, 248, 0.4);
+        }
+        .glow-amber {
+            text-shadow: 0 0 8px rgba(251, 191, 36, 0.8), 0 0 16px rgba(251, 191, 36, 0.4);
+        }
+        .glow-pink {
+            text-shadow: 0 0 8px rgba(244, 63, 94, 0.8), 0 0 16px rgba(244, 63, 94, 0.4);
+        }
+        /* アーケード風ボタン */
+        .arcade-btn {
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            border: 2px solid #38bdf8;
+            box-shadow: 0 4px 0 #0284c7, 0 0 12px rgba(56, 189, 248, 0.3);
+            transition: all 0.08s ease;
+        }
+        .arcade-btn:active, .arcade-btn.active {
+            transform: translateY(4px);
+            box-shadow: 0 0px 0 #0284c7, 0 0 18px rgba(56, 189, 248, 0.7);
+            background: #0284c7;
+            color: #ffffff;
+        }
+        .arcade-btn-red {
+            border-color: #f43f5e;
+            box-shadow: 0 4px 0 #be123c, 0 0 12px rgba(244, 63, 94, 0.3);
+        }
+        .arcade-btn-red:active, .arcade-btn-red.active {
+            box-shadow: 0 0px 0 #be123c, 0 0 18px rgba(244, 63, 94, 0.7);
+            background: #e11d48;
+        }
+        .arcade-btn-amber {
+            border-color: #fbbf24;
+            box-shadow: 0 4px 0 #b45309, 0 0 12px rgba(251, 191, 36, 0.3);
+        }
+        .arcade-btn-amber:active, .arcade-btn-amber.active {
+            box-shadow: 0 0px 0 #b45309, 0 0 18px rgba(251, 191, 36, 0.7);
+            background: #d97706;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col items-center justify-between p-2 sm:p-4 select-none">
+
+    <!-- ヘッダー＆ステータスバー -->
+    <header class="w-full max-w-4xl flex flex-wrap items-center justify-between px-4 py-2 bg-slate-900/90 border border-slate-800 rounded-xl shadow-lg z-20">
+        <div class="flex items-center space-x-3">
+            <span class="retro-font text-base sm:text-xl text-sky-400 glow-text tracking-wider">COMPUTER SPACE</span>
+        </div>
+        <div class="flex items-center space-x-6 sm:space-x-10 text-sm sm:text-base">
+            <div class="flex flex-col items-center">
+                <span class="text-xs text-slate-400">SCORE</span>
+                <span id="scoreDisplay" class="retro-font text-sky-300 glow-text text-base sm:text-xl">0000</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="text-xs text-slate-400">TIME</span>
+                <span id="timeDisplay" class="retro-font text-amber-400 glow-amber text-base sm:text-xl">60.0</span>
+            </div>
+            <div class="flex flex-col items-center">
+                <span class="text-xs text-slate-400">HI-SCORE</span>
+                <span id="highScoreDisplay" class="retro-font text-rose-400 glow-pink text-base sm:text-xl">0000</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインゲーム画面 (CRT) -->
+    <main class="relative w-full max-w-4xl flex-1 my-2 crt-container flex items-center justify-center">
+        <canvas id="gameCanvas" class="w-full h-full block"></canvas>
+
+        <!-- オーバーレイ画面 (スタート / ゲームオーバー / タイムアップ) -->
+        <div id="overlayScreen" class="absolute inset-0 bg-slate-950/85 backdrop-blur-xs flex flex-col items-center justify-center p-6 z-20 text-center">
+            <h1 id="overlayTitle" class="retro-font text-2xl sm:text-4xl text-sky-400 glow-text mb-2 tracking-widest">COMPUTER SPACE</h1>
+            <p id="overlaySubtitle" class="text-slate-300 text-sm sm:text-base mb-6">1分間でUFOを撃破しハイスコアを目指せ！</p>
+
+            <!-- 結果表示ボックス（初期は非表示） -->
+            <div id="resultBox" class="hidden mb-6 p-4 rounded-xl bg-slate-900/90 border border-sky-500/40 w-full max-w-sm">
+                <p id="resultReason" class="text-lg font-bold text-rose-400 glow-pink mb-2">GAME OVER</p>
+                <div class="flex justify-around items-center my-3">
+                    <div>
+                        <div class="text-xs text-slate-400">FINAL SCORE</div>
+                        <div id="finalScore" class="retro-font text-2xl text-sky-300 glow-text mt-1">0</div>
+                    </div>
+                    <div class="h-8 border-r border-slate-700"></div>
+                    <div>
+                        <div class="text-xs text-slate-400">HIGH SCORE</div>
+                        <div id="finalHighScore" class="retro-font text-xl text-amber-400 glow-amber mt-1">0</div>
+                    </div>
+                </div>
+                <p id="newRecordBadge" class="hidden text-xs text-amber-300 font-bold animate-pulse mt-1">★ NEW HIGH SCORE! ★</p>
+            </div>
+
+            <!-- ルール＆操作説明カード -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left bg-slate-900/80 border border-slate-800 p-4 rounded-xl max-w-xl w-full mb-6 text-xs sm:text-sm">
+                <div>
+                    <h2 class="text-sky-400 font-bold mb-2 border-b border-slate-800 pb-1">【キーボード操作】</h2>
+                    <ul class="space-y-1.5 text-slate-200">
+                        <li><span class="inline-block w-24 text-rose-400 font-bold">[Q] キー</span>：ミサイル発射</li>
+                        <li><span class="inline-block w-24 text-amber-400 font-bold">[R] キー</span>：高速移動 (押下中2倍速)</li>
+                        <li><span class="inline-block w-24 text-sky-300 font-bold">[U] / [←]</span>：左回転</li>
+                        <li><span class="inline-block w-24 text-sky-300 font-bold">[P] / [→]</span>：右回転</li>
+                    </ul>
+                </div>
+                <div>
+                    <h2 class="text-amber-400 font-bold mb-2 border-b border-slate-800 pb-1">【ターゲット＆仕様】</h2>
+                    <ul class="space-y-1.5 text-slate-200">
+                        <li class="flex items-center justify-between">
+                            <span>🛸 <span class="text-emerald-400 font-bold">UFO_1</span> (通常型・出現4/5)</span>
+                            <span class="retro-font text-xs text-emerald-300">10 PTS</span>
+                        </li>
+                        <li class="flex items-center justify-between">
+                            <span>👾 <span class="text-fuchsia-400 font-bold">UFO_2</span> (高速型・出現1/5)</span>
+                            <span class="retro-font text-xs text-fuchsia-300">50 PTS</span>
+                        </li>
+                        <li class="text-slate-400 text-xs pt-1">※宇宙船は常時直進し、画面端で反対側へワープします。UFOと衝突すると即ゲームオーバー！</li>
+                        <li class="text-amber-300 text-xs pt-0.5">※[Q+R]同時押しでスタート / [BS]キーでタイトルへ戻る</li>
+                    </ul>
+                </div>
+            </div>
+
+            <button id="startBtn" class="arcade-btn px-8 py-3.5 rounded-xl text-base sm:text-lg font-bold tracking-wider text-sky-100 cursor-pointer">
+                GAME START [Q+R / SPACE / CLICK]
+            </button>
+
+            <button id="openSettingsBtn" class="mt-3 arcade-btn arcade-btn-amber px-6 py-2 rounded-xl text-xs sm:text-sm font-bold tracking-wider text-amber-100 cursor-pointer">
+                ⚙ SETTINGS [宇宙船・回転速度設定]
+            </button>
+        </div>
+
+        <!-- 設定画面モーダル -->
+        <div id="settingsModal" class="hidden absolute inset-0 bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 z-30 text-center">
+            <h2 class="retro-font text-xl sm:text-3xl text-amber-400 glow-amber mb-2 tracking-widest">SETTINGS</h2>
+            <p class="text-slate-300 text-xs sm:text-sm mb-6">宇宙船の移動速度と回転速度をカスタマイズできます</p>
+
+            <div class="bg-slate-900/90 border border-slate-800 p-5 sm:p-6 rounded-xl max-w-md w-full mb-6 text-left space-y-6">
+                <!-- 宇宙船の移動速度 -->
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label for="shipSpeedSlider" class="text-sky-400 font-bold text-sm sm:text-base">宇宙船の移動速度</label>
+                        <span id="shipSpeedVal" class="retro-font text-sky-300 text-xs sm:text-sm">105 px/s (1.0x)</span>
+                    </div>
+                    <input id="shipSpeedSlider" type="range" min="40" max="260" step="5" value="105" class="w-full accent-sky-400 cursor-pointer h-2 bg-slate-800 rounded-lg">
+                    <div class="flex justify-between text-[11px] text-slate-400 mt-1">
+                        <span>ゆっくり (40)</span>
+                        <span>標準 (105)</span>
+                        <span>高速 (260)</span>
+                    </div>
+                </div>
+
+                <!-- 左右の回転速度 -->
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label for="turnSpeedSlider" class="text-emerald-400 font-bold text-sm sm:text-base">左右の回転速度</label>
+                        <span id="turnSpeedVal" class="retro-font text-emerald-300 text-xs sm:text-sm">7.6 rad/s (1.0x)</span>
+                    </div>
+                    <input id="turnSpeedSlider" type="range" min="3.0" max="15.0" step="0.2" value="7.6" class="w-full accent-emerald-400 cursor-pointer h-2 bg-slate-800 rounded-lg">
+                    <div class="flex justify-between text-[11px] text-slate-400 mt-1">
+                        <span>遅い (3.0)</span>
+                        <span>標準 (7.6)</span>
+                        <span>俊敏 (15.0)</span>
+                    </div>
+                </div>
+
+                <!-- ミサイル速度の自動連動表示 -->
+                <div class="pt-3 border-t border-slate-800 flex justify-between items-center text-xs sm:text-sm">
+                    <span class="text-rose-400 font-bold">ミサイル速度 (自動調節)</span>
+                    <span id="missileSpeedVal" class="retro-font text-rose-300">520 px/s</span>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <button id="resetSettingsBtn" class="arcade-btn px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-200 cursor-pointer">
+                    初期値に戻す
+                </button>
+                <button id="closeSettingsBtn" class="arcade-btn arcade-btn-amber px-8 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-amber-100 cursor-pointer">
+                    完了 [BACK]
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- コントロールパネル (タッチ＆マウス対応・キー連動インジケーター) -->
+    <footer class="w-full max-w-4xl flex items-center justify-between gap-2 px-2 py-1 z-20">
+        <div class="flex items-center gap-2 sm:gap-3">
+            <button id="btnFire" class="arcade-btn arcade-btn-red px-4 py-3 sm:px-6 sm:py-3.5 rounded-xl font-bold text-xs sm:text-sm flex flex-col items-center min-w-[76px] sm:min-w-[100px]">
+                <span>FIRE</span>
+                <span class="text-[10px] text-rose-200 opacity-80 mt-0.5">[Q]</span>
+            </button>
+            <button id="btnBoost" class="arcade-btn arcade-btn-amber px-4 py-3 sm:px-6 sm:py-3.5 rounded-xl font-bold text-xs sm:text-sm flex flex-col items-center min-w-[76px] sm:min-w-[100px]">
+                <span>BOOST x2</span>
+                <span class="text-[10px] text-amber-200 opacity-80 mt-0.5">[R]</span>
+            </button>
+        </div>
+
+        <div class="hidden md:flex flex-col items-center text-xs text-slate-400">
+            <span>等速直進運動 / 画面端ワープ</span>
+            <span class="text-[11px] text-slate-500">UFO衝突でゲームオーバー・制限時間60秒</span>
+        </div>
+
+        <div class="flex items-center gap-2 sm:gap-3">
+            <button id="btnLeft" class="arcade-btn px-4 py-3 sm:px-6 sm:py-3.5 rounded-xl font-bold text-xs sm:text-sm flex flex-col items-center min-w-[76px] sm:min-w-[100px]">
+                <span>◀ LEFT</span>
+                <span class="text-[10px] text-sky-200 opacity-80 mt-0.5">[U / ←]</span>
+            </button>
+            <button id="btnRight" class="arcade-btn px-4 py-3 sm:px-6 sm:py-3.5 rounded-xl font-bold text-xs sm:text-sm flex flex-col items-center min-w-[76px] sm:min-w-[100px]">
+                <span>RIGHT ▶</span>
+                <span class="text-[10px] text-sky-200 opacity-80 mt-0.5">[P / →]</span>
+            </button>
+        </div>
+    </footer>
+
+    <script>
+        /**
+         * Web Audio API を用いたレトロサウンドシンセサイザー
+         * 外部音源を使わず、コードのみで効果音を生成します
+         */
+        class SoundEffects {
+            constructor() {
+                this.ctx = null;
+            }
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) this.ctx = new AudioCtx();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+            playShoot() {
+                if (!this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(880, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(140, this.ctx.currentTime + 0.14);
+                    gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.14);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.14);
+                } catch (e) {}
+            }
+            playCountdown(isGo = false) {
+                if (!this.ctx) return;
+                try {
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'square';
+                    const freq = isGo ? 880 : 440;
+                    const duration = isGo ? 0.35 : 0.15;
+                    osc.frequency.setValueAtTime(freq, now);
+                    if (isGo) {
+                        osc.frequency.setValueAtTime(1174.66, now + 0.08);
+                    }
+                    gain.gain.setValueAtTime(0.18, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + duration);
+                } catch (e) {}
+            }
+            playHit(isRare = false) {
+                if (!this.ctx) return;
+                try {
+                    const now = this.ctx.currentTime;
+                    // メインの爆発シンセ音
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = isRare ? 'square' : 'sawtooth';
+                    const startFreq = isRare ? 740 : 320;
+                    osc.frequency.setValueAtTime(startFreq, now);
+                    if (isRare) {
+                        osc.frequency.setValueAtTime(1046.5, now + 0.06);
+                        osc.frequency.setValueAtTime(1480, now + 0.12);
+                        osc.frequency.exponentialRampToValueAtTime(65, now + 0.45);
+                    } else {
+                        osc.frequency.exponentialRampToValueAtTime(40, now + 0.35);
+                    }
+                    gain.gain.setValueAtTime(0.28, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + (isRare ? 0.45 : 0.35));
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + (isRare ? 0.45 : 0.35));
+
+                    // 重低音サブベース（迫力アップ）
+                    const subOsc = this.ctx.createOscillator();
+                    const subGain = this.ctx.createGain();
+                    subOsc.type = 'triangle';
+                    subOsc.frequency.setValueAtTime(130, now);
+                    subOsc.frequency.exponentialRampToValueAtTime(28, now + 0.4);
+                    subGain.gain.setValueAtTime(0.35, now);
+                    subGain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                    subOsc.connect(subGain);
+                    subGain.connect(this.ctx.destination);
+                    subOsc.start(now);
+                    subOsc.stop(now + 0.4);
+                } catch (e) {}
+            }
+            playGameOver() {
+                if (!this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(240, this.ctx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(45, this.ctx.currentTime + 0.65);
+                    gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.65);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.65);
+                } catch (e) {}
+            }
+            playTimeUp() {
+                if (!this.ctx) return;
+                try {
+                    const now = this.ctx.currentTime;
+                    [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'square';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+                        gain.gain.setValueAtTime(0.15, now + idx * 0.09);
+                        gain.gain.linearRampToValueAtTime(0.01, now + idx * 0.09 + 0.18);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(now + idx * 0.09);
+                        osc.stop(now + idx * 0.09 + 0.18);
+                    });
+                } catch (e) {}
+            }
+        }
+
+        const sound = new SoundEffects();
+
+        // DOM要素の取得
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const highScoreDisplay = document.getElementById('highScoreDisplay');
+        const overlayScreen = document.getElementById('overlayScreen');
+        const overlayTitle = document.getElementById('overlayTitle');
+        const overlaySubtitle = document.getElementById('overlaySubtitle');
+        const resultBox = document.getElementById('resultBox');
+        const resultReason = document.getElementById('resultReason');
+        const finalScore = document.getElementById('finalScore');
+        const finalHighScore = document.getElementById('finalHighScore');
+        const newRecordBadge = document.getElementById('newRecordBadge');
+        const startBtn = document.getElementById('startBtn');
+        const openSettingsBtn = document.getElementById('openSettingsBtn');
+        const settingsModal = document.getElementById('settingsModal');
+        const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+        const resetSettingsBtn = document.getElementById('resetSettingsBtn');
+        const shipSpeedSlider = document.getElementById('shipSpeedSlider');
+        const turnSpeedSlider = document.getElementById('turnSpeedSlider');
+        const shipSpeedVal = document.getElementById('shipSpeedVal');
+        const turnSpeedVal = document.getElementById('turnSpeedVal');
+        const missileSpeedVal = document.getElementById('missileSpeedVal');
+
+        // ボタン要素
+        const btnFire = document.getElementById('btnFire');
+        const btnBoost = document.getElementById('btnBoost');
+        const btnLeft = document.getElementById('btnLeft');
+        const btnRight = document.getElementById('btnRight');
+
+        // ゲーム定数・設定（デフォルト値）
+        const GAME_DURATION = 60.0; // 1分間 (60秒)
+        const DEFAULT_SHIP_SPEED = 105; // 標準の宇宙船の直進速度 (px/sec)
+        const DEFAULT_TURN_SPEED = 7.6; // 標準の回転速度 (従来の3.8から2倍に変更)
+        const DEFAULT_MISSILE_SPEED = 520; // 標準のミサイル速度 (px/sec)
+
+        // 設定画面から変更可能なパラメータ（ミサイル速度は宇宙船の速度に比例して自動計算）
+        let baseShipSpeed = DEFAULT_SHIP_SPEED;
+        let shipTurnSpeed = DEFAULT_TURN_SPEED;
+        let missileSpeed = DEFAULT_MISSILE_SPEED;
+
+        const MISSILE_COOLDOWN = 0.18; // ミサイル発射間隔 (秒)
+        const MAX_UFOS = 7;          // 画面上の最大UFO数
+
+        /**
+         * 設定値の反映とミサイル速度の自動調節
+         */
+        function applySettings() {
+            baseShipSpeed = parseFloat(shipSpeedSlider.value);
+            shipTurnSpeed = parseFloat(turnSpeedSlider.value);
+
+            // 宇宙船の速度に合わせてミサイルの速度を自動調節（常にブースト時の宇宙船より速くなるよう連動）
+            missileSpeed = Math.round(baseShipSpeed * (DEFAULT_MISSILE_SPEED / DEFAULT_SHIP_SPEED));
+
+            const speedRatio = (baseShipSpeed / DEFAULT_SHIP_SPEED).toFixed(1);
+            const turnRatio = (shipTurnSpeed / DEFAULT_TURN_SPEED).toFixed(1);
+
+            shipSpeedVal.textContent = `${baseShipSpeed} px/s (${speedRatio}x)`;
+            turnSpeedVal.textContent = `${shipTurnSpeed.toFixed(1)} rad/s (${turnRatio}x)`;
+            missileSpeedVal.textContent = `${missileSpeed} px/s`;
+        }
+
+        shipSpeedSlider.addEventListener('input', applySettings);
+        turnSpeedSlider.addEventListener('input', applySettings);
+
+        openSettingsBtn.addEventListener('click', () => {
+            sound.init();
+            settingsModal.classList.remove('hidden');
+        });
+
+        closeSettingsBtn.addEventListener('click', () => {
+            settingsModal.classList.add('hidden');
+        });
+
+        resetSettingsBtn.addEventListener('click', () => {
+            shipSpeedSlider.value = DEFAULT_SHIP_SPEED;
+            turnSpeedSlider.value = DEFAULT_TURN_SPEED;
+            applySettings();
+        });
+
+        // ゲーム状態変数
+        let gameState = 'TITLE'; // 'TITLE', 'COUNTDOWN', 'PLAYING', 'ENDED'
+        let score = 0;
+        let highScore = 0;
+        let timeLeft = GAME_DURATION;
+        let lastFrameTime = performance.now();
+        let spawnTimer = 0;
+        let countdownTimer = 0;
+        let lastCountdownNum = 0;
+        let screenShake = 0;
+        let screenFlash = 0;
+        let screenFlashColor = '#ffffff';
+
+        // ローカルストレージからハイスコア読み込み
+        try {
+            const saved = localStorage.getItem('computer_space_highscore');
+            if (saved) {
+                highScore = parseInt(saved, 10) || 0;
+                highScoreDisplay.textContent = String(highScore).padStart(4, '0');
+            }
+        } catch (e) {}
+
+        // 入力状態管理
+        const inputState = {
+            left: false,
+            right: false,
+            boost: false,
+            fire: false
+        };
+
+        // 同時押し判定用のキー押下状態管理
+        const pressedKeys = {
+            q: false,
+            r: false,
+            u: false,
+            p: false
+        };
+
+        // オブジェクト管理用配列
+        let stars = [];
+        let missiles = [];
+        let ufos = [];
+        let particles = [];
+        let shockwaves = [];
+        let floatingTexts = [];
+
+        // プレイヤー宇宙船オブジェクト
+        const ship = {
+            x: 0,
+            y: 0,
+            angle: -Math.PI / 2, // 上向きスタート
+            radius: 28, // 大きさを2倍に変更 (旧: 14 -> 28)
+            cooldown: 0
+        };
+
+        /**
+         * 画面端のワープ処理（上下左右に消えたら反対側に移動）
+         */
+        function wrapPosition(entity, margin = 0) {
+            if (entity.x < -margin) entity.x += canvas.width + margin * 2;
+            if (entity.x > canvas.width + margin) entity.x -= canvas.width + margin * 2;
+            if (entity.y < -margin) entity.y += canvas.height + margin * 2;
+            if (entity.y > canvas.height + margin) entity.y -= canvas.height + margin * 2;
+        }
+
+        /**
+         * 背景の星空を生成
+         */
+        function createStars() {
+            stars = [];
+            const numStars = Math.floor((canvas.width * canvas.height) / 6500);
+            for (let i = 0; i < numStars; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() < 0.25 ? 2 : 1,
+                    alpha: 0.3 + Math.random() * 0.7,
+                    blinkSpeed: 1 + Math.random() * 3,
+                    phase: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        /**
+         * キャンバスのリサイズ処理
+         */
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            createStars();
+            if (gameState === 'TITLE') {
+                ship.x = canvas.width / 2;
+                ship.y = canvas.height / 2;
+            }
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        /**
+         * UFOの生成処理
+         * UFO_1: 10点 (出現率 4/5 = 80%)
+         * UFO_2: 50点 (出現率 1/5 = 20%)
+         */
+        function spawnUFO() {
+            // 1/5 (0.2) の確率で UFO_2、4/5 (0.8) の確率で UFO_1
+            const isUFO2 = Math.random() < 0.2;
+
+            // 画面の4辺のいずれかから出現させ、宇宙船との出現直後の理不尽な衝突を防ぐ
+            let x, y;
+            const edge = Math.floor(Math.random() * 4);
+            if (edge === 0) { // 上端
+                x = Math.random() * canvas.width;
+                y = 0;
+            } else if (edge === 1) { // 右端
+                x = canvas.width;
+                y = Math.random() * canvas.height;
+            } else if (edge === 2) { // 下端
+                x = Math.random() * canvas.width;
+                y = canvas.height;
+            } else { // 左端
+                x = 0;
+                y = Math.random() * canvas.height;
+            }
+
+            // もしプレイヤーに近すぎる場合は反対側へずらす（キャラクター2倍化に合わせて安全距離を拡大）
+            const distToShip = Math.hypot(x - ship.x, y - ship.y);
+            if (distToShip < 200) {
+                x = (x + canvas.width / 2) % canvas.width;
+                y = (y + canvas.height / 2) % canvas.height;
+            }
+
+            // ランダムな進行方向と速度
+            const moveAngle = Math.random() * Math.PI * 2;
+            const speed = isUFO2 ? (155 + Math.random() * 55) : (85 + Math.random() * 45);
+
+            ufos.push({
+                type: isUFO2 ? 'UFO_2' : 'UFO_1',
+                points: isUFO2 ? 50 : 10,
+                x: x,
+                y: y,
+                vx: Math.cos(moveAngle) * speed,
+                vy: Math.sin(moveAngle) * speed,
+                radius: isUFO2 ? 30 : 36, // 大きさを2倍に変更 (旧: 15 / 18 -> 30 / 36)
+                dirTimer: 1.5 + Math.random() * 2.5,
+                animPhase: Math.random() * Math.PI * 2
+            });
+        }
+
+        /**
+         * ミサイル発射処理
+         */
+        function fireMissile() {
+            if (gameState !== 'PLAYING' || ship.cooldown > 0) return;
+
+            const noseX = ship.x + Math.cos(ship.angle) * (ship.radius + 8);
+            const noseY = ship.y + Math.sin(ship.angle) * (ship.radius + 8);
+
+            missiles.push({
+                x: noseX,
+                y: noseY,
+                vx: Math.cos(ship.angle) * missileSpeed,
+                vy: Math.sin(ship.angle) * missileSpeed,
+                radius: 6, // ミサイルの大きさも2倍に変更 (旧: 3 -> 6)
+                life: 1.35 // 1.35秒間有効
+            });
+
+            ship.cooldown = MISSILE_COOLDOWN;
+            sound.playShoot();
+        }
+
+        /**
+         * 派手な爆発エフェクトとスコアポップアップの生成
+         */
+        function createExplosion(x, y, color, count = 45, isRare = false) {
+            const palette = isRare
+                ? [color, '#ffffff', '#fde047', '#f43f5e', '#38bdf8']
+                : [color, '#ffffff', '#fde047', '#6ee7b7'];
+
+            // 1. 高速で飛び散るスパーク＆ベクター破片（デブリ）
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 40 + Math.random() * (isRare ? 420 : 320);
+                const pColor = palette[Math.floor(Math.random() * palette.length)];
+                const isLine = Math.random() < 0.45; // ベクター風の線状破片を混ぜる
+                const maxLife = 0.45 + Math.random() * 0.55;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: maxLife,
+                    maxLife: maxLife,
+                    color: pColor,
+                    size: isLine ? (10 + Math.random() * 14) : (2.5 + Math.random() * 4.5),
+                    isLine: isLine,
+                    angle: angle,
+                    rotSpeed: (Math.random() - 0.5) * 14
+                });
+            }
+
+            // 2. 広がる衝撃波リング（ショックウェーブ）
+            shockwaves.push({
+                x: x,
+                y: y,
+                radius: 6,
+                maxRadius: isRare ? 150 : 95,
+                life: 0.45,
+                maxLife: 0.45,
+                color: color,
+                lineWidth: isRare ? 5 : 3.5
+            });
+
+            // 2重目の白い高速リング
+            shockwaves.push({
+                x: x,
+                y: y,
+                radius: 2,
+                maxRadius: isRare ? 95 : 60,
+                life: 0.3,
+                maxLife: 0.3,
+                color: '#ffffff',
+                lineWidth: 2
+            });
+
+            // 3. 画面シェイクとフラッシュ演出
+            screenShake = isRare ? 14 : 8;
+            screenFlash = isRare ? 0.28 : 0.14;
+            screenFlashColor = color;
+        }
+
+        function createFloatingText(x, y, text, color) {
+            floatingTexts.push({
+                x: x,
+                y: y,
+                text: text,
+                color: color,
+                life: 0.85,
+                maxLife: 0.85
+            });
+        }
+
+        /**
+         * ゲーム開始処理（3, 2, 1のカウントダウンから開始）
+         */
+        function startGame() {
+            sound.init();
+            score = 0;
+            timeLeft = GAME_DURATION;
+            scoreDisplay.textContent = '0000';
+            timeDisplay.textContent = timeLeft.toFixed(1);
+
+            // 宇宙船を中央に配置
+            ship.x = canvas.width / 2;
+            ship.y = canvas.height / 2;
+            ship.angle = -Math.PI / 2;
+            ship.cooldown = 0;
+
+            missiles = [];
+            ufos = [];
+            particles = [];
+            shockwaves = [];
+            floatingTexts = [];
+            spawnTimer = 0;
+            screenShake = 0;
+            screenFlash = 0;
+
+            // カウントダウン開始 (3.0秒)
+            gameState = 'COUNTDOWN';
+            countdownTimer = 3.0;
+            lastCountdownNum = 3;
+            sound.playCountdown(false);
+            overlayScreen.classList.add('hidden');
+        }
+
+        /**
+         * タイトル画面に戻る処理 (BSキー用)
+         */
+        function returnToTitle() {
+            gameState = 'TITLE';
+            score = 0;
+            timeLeft = GAME_DURATION;
+            scoreDisplay.textContent = '0000';
+            timeDisplay.textContent = timeLeft.toFixed(1);
+
+            ship.x = canvas.width / 2;
+            ship.y = canvas.height / 2;
+            ship.angle = -Math.PI / 2;
+            ship.cooldown = 0;
+
+            missiles = [];
+            ufos = [];
+            particles = [];
+            shockwaves = [];
+            floatingTexts = [];
+            screenShake = 0;
+            screenFlash = 0;
+
+            inputState.left = false;
+            inputState.right = false;
+            inputState.boost = false;
+            inputState.fire = false;
+            pressedKeys.q = false;
+            pressedKeys.r = false;
+            pressedKeys.u = false;
+            pressedKeys.p = false;
+            updateButtonVisuals();
+
+            settingsModal.classList.add('hidden');
+            overlayTitle.textContent = 'COMPUTER SPACE';
+            overlaySubtitle.textContent = '1分間でUFOを撃破しハイスコアを目指せ！';
+            resultBox.classList.add('hidden');
+            startBtn.textContent = 'GAME START [Q+R / SPACE / CLICK]';
+            overlayScreen.classList.remove('hidden');
+        }
+
+        /**
+         * ゲーム終了処理 (衝突ゲームオーバー または 1分経過タイムアップ)
+         */
+        function endGame(reason) {
+            gameState = 'ENDED';
+
+            let isNewRecord = false;
+            if (score > highScore) {
+                highScore = score;
+                isNewRecord = true;
+                highScoreDisplay.textContent = String(highScore).padStart(4, '0');
+                try {
+                    localStorage.setItem('computer_space_highscore', String(highScore));
+                } catch (e) {}
+            }
+
+            if (reason === 'COLLISION') {
+                sound.playGameOver();
+                overlayTitle.textContent = 'GAME OVER';
+                overlaySubtitle.textContent = 'UFOと宇宙船が衝突しました！';
+                resultReason.textContent = '💥 CRASHED INTO UFO!';
+                resultReason.className = 'text-lg font-bold text-rose-400 glow-pink mb-2';
+            } else {
+                sound.playTimeUp();
+                overlayTitle.textContent = 'TIME UP!';
+                overlaySubtitle.textContent = '1分間のミッション完了！';
+                resultReason.textContent = '⏱ 60 SECONDS CLEAR!';
+                resultReason.className = 'text-lg font-bold text-amber-400 glow-amber mb-2';
+            }
+
+            finalScore.textContent = String(score).padStart(4, '0');
+            finalHighScore.textContent = String(highScore).padStart(4, '0');
+
+            if (isNewRecord && score > 0) {
+                newRecordBadge.classList.remove('hidden');
+            } else {
+                newRecordBadge.classList.add('hidden');
+            }
+
+            resultBox.classList.remove('hidden');
+            startBtn.textContent = 'PLAY AGAIN [Q+R / SPACE / CLICK]';
+            overlayScreen.classList.remove('hidden');
+        }
+
+        /**
+         * キーボード・ボタン入力イベントの設定
+         */
+        function updateButtonVisuals() {
+            btnFire.classList.toggle('active', inputState.fire);
+            btnBoost.classList.toggle('active', inputState.boost);
+            btnLeft.classList.toggle('active', inputState.left);
+            btnRight.classList.toggle('active', inputState.right);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+
+            // BS (Backspace) キーが押されたらタイトル画面に戻る
+            if (e.key === 'Backspace') {
+                e.preventDefault();
+                returnToTitle();
+                return;
+            }
+
+            // 設定画面を開いている時はESCキーで閉じる、スペース開始を無効化
+            if (!settingsModal.classList.contains('hidden')) {
+                if (e.code === 'Escape') {
+                    settingsModal.classList.add('hidden');
+                }
+                return;
+            }
+
+            if (key === 'q' || key === 'r' || key === 'u' || key === 'p') {
+                pressedKeys[key] = true;
+            }
+
+            // Q＋Rキーの同時押し、またはスペース/エンターキーでゲームスタート
+            if (gameState === 'TITLE' || gameState === 'ENDED') {
+                const isQRPressed = pressedKeys.q && pressedKeys.r;
+                if (isQRPressed || e.code === 'Space' || e.code === 'Enter') {
+                    e.preventDefault();
+                    startGame();
+                    return;
+                }
+            }
+
+            if (key === 'q') {
+                inputState.fire = true;
+                fireMissile();
+            } else if (key === 'r') {
+                inputState.boost = true;
+            } else if (key === 'u' || e.key === 'ArrowLeft') {
+                e.preventDefault();
+                inputState.left = true;
+            } else if (key === 'p' || e.key === 'ArrowRight') {
+                e.preventDefault();
+                inputState.right = true;
+            }
+            updateButtonVisuals();
+        });
+
+        window.addEventListener('keyup', (e) => {
+            const key = e.key.toLowerCase();
+            if (key === 'q' || key === 'r' || key === 'u' || key === 'p') {
+                pressedKeys[key] = false;
+            }
+            if (key === 'q') {
+                inputState.fire = false;
+            } else if (key === 'r') {
+                inputState.boost = false;
+            } else if (key === 'u' || e.key === 'ArrowLeft') {
+                inputState.left = false;
+            } else if (key === 'p' || e.key === 'ArrowRight') {
+                inputState.right = false;
+            }
+            updateButtonVisuals();
+        });
+
+        // 画面上のアーケードボタン操作（マウス＆タッチ両対応）
+        function bindControlBtn(btnElement, stateKey, onPressCallback = null) {
+            const startPress = (e) => {
+                e.preventDefault();
+                inputState[stateKey] = true;
+                // 待機画面でFIRE(Q)とBOOST(R)ボタンを同時押しした場合もスタート
+                if ((gameState === 'TITLE' || gameState === 'ENDED') && inputState.fire && inputState.boost) {
+                    startGame();
+                    updateButtonVisuals();
+                    return;
+                }
+                if (onPressCallback) onPressCallback();
+                updateButtonVisuals();
+            };
+            const endPress = (e) => {
+                e.preventDefault();
+                inputState[stateKey] = false;
+                updateButtonVisuals();
+            };
+            btnElement.addEventListener('mousedown', startPress);
+            btnElement.addEventListener('touchstart', startPress, { passive: false });
+            btnElement.addEventListener('mouseup', endPress);
+            btnElement.addEventListener('mouseleave', endPress);
+            btnElement.addEventListener('touchend', endPress);
+            btnElement.addEventListener('touchcancel', endPress);
+        }
+
+        bindControlBtn(btnFire, 'fire', () => fireMissile());
+        bindControlBtn(btnBoost, 'boost');
+        bindControlBtn(btnLeft, 'left');
+        bindControlBtn(btnRight, 'right');
+
+        startBtn.addEventListener('click', () => {
+            startGame();
+        });
+
+        /**
+         * メインアップデート処理
+         */
+        function update(dt) {
+            // カウントダウン中の処理（3, 2, 1 -> GO!）
+            if (gameState === 'COUNTDOWN') {
+                countdownTimer -= dt;
+                const currentNum = Math.ceil(countdownTimer);
+                if (currentNum < lastCountdownNum && currentNum > 0) {
+                    lastCountdownNum = currentNum;
+                    sound.playCountdown(false);
+                }
+
+                // カウントダウン中も宇宙船の向きだけは回せるようにする
+                if (inputState.left) ship.angle -= shipTurnSpeed * dt;
+                if (inputState.right) ship.angle += shipTurnSpeed * dt;
+
+                if (countdownTimer <= 0) {
+                    sound.playCountdown(true);
+                    gameState = 'PLAYING';
+                    // 初期UFOを4機出現させる
+                    for (let i = 0; i < 4; i++) {
+                        spawnUFO();
+                    }
+                    createFloatingText(canvas.width / 2, canvas.height / 2, 'GO!', '#fbbf24', true);
+                }
+                updateParticlesAndTexts(dt);
+                return;
+            }
+
+            if (gameState !== 'PLAYING') {
+                // パーティクルのみ余韻として動かす
+                updateParticlesAndTexts(dt);
+                return;
+            }
+
+            // 1. タイマーの更新（1分間）
+            timeLeft -= dt;
+            if (timeLeft <= 0) {
+                timeLeft = 0;
+                timeDisplay.textContent = '0.0';
+                endGame('TIME_UP');
+                return;
+            }
+            timeDisplay.textContent = timeLeft.toFixed(1);
+
+            // 2. 宇宙船の回転（U / P / 左右カーソルキー）
+            if (inputState.left) {
+                ship.angle -= shipTurnSpeed * dt;
+            }
+            if (inputState.right) {
+                ship.angle += shipTurnSpeed * dt;
+            }
+
+            // 3. 宇宙船の等速直進運動（Rキーを押している間だけ速度2倍）
+            const speedMultiplier = inputState.boost ? 2.0 : 1.0;
+            const currentSpeed = baseShipSpeed * speedMultiplier;
+            ship.x += Math.cos(ship.angle) * currentSpeed * dt;
+            ship.y += Math.sin(ship.angle) * currentSpeed * dt;
+
+            // 宇宙船が画面の上下左右に消えたら反対側に移動して表示される（マージン0で即ワープ）
+            wrapPosition(ship, 0);
+
+            // 高速移動（Rキー）中のジェット噴射パーティクル
+            if (inputState.boost && Math.random() < 0.75) {
+                const tailX = ship.x - Math.cos(ship.angle) * ship.radius;
+                const tailY = ship.y - Math.sin(ship.angle) * ship.radius;
+                particles.push({
+                    x: tailX + (Math.random() - 0.5) * 6,
+                    y: tailY + (Math.random() - 0.5) * 6,
+                    vx: -Math.cos(ship.angle) * (60 + Math.random() * 60),
+                    vy: -Math.sin(ship.angle) * (60 + Math.random() * 60),
+                    life: 0.18 + Math.random() * 0.12,
+                    maxLife: 0.3,
+                    color: '#fbbf24',
+                    size: 2
+                });
+            }
+
+            // 4. ミサイルのクールダウンと連射処理
+            if (ship.cooldown > 0) {
+                ship.cooldown -= dt;
+            }
+            if (inputState.fire && ship.cooldown <= 0) {
+                fireMissile();
+            }
+
+            // 5. ミサイルの移動
+            for (let i = missiles.length - 1; i >= 0; i--) {
+                const m = missiles[i];
+                m.x += m.vx * dt;
+                m.y += m.vy * dt;
+                m.life -= dt;
+
+                // 画面の端についたら消去する（ワープしない）
+                const isOutOfBounds = m.x < 0 || m.x > canvas.width || m.y < 0 || m.y > canvas.height;
+
+                if (m.life <= 0 || isOutOfBounds) {
+                    missiles.splice(i, 1);
+                }
+            }
+
+            // 6. UFOのスポーン管理
+            spawnTimer += dt;
+            if (ufos.length < MAX_UFOS && spawnTimer >= 1.15) {
+                spawnTimer = 0;
+                spawnUFO();
+            }
+            // 万が一画面上のUFOが0機になった場合は即補充
+            if (ufos.length === 0) {
+                spawnUFO();
+                spawnUFO();
+            }
+
+            // 7. UFOの移動と衝突判定
+            for (let i = ufos.length - 1; i >= 0; i--) {
+                const u = ufos[i];
+                u.x += u.vx * dt;
+                u.y += u.vy * dt;
+                u.animPhase += dt * 6;
+
+                // UFOの不規則な軌道変化（UFO_2はより頻繁に方向を変える）
+                u.dirTimer -= dt;
+                if (u.dirTimer <= 0) {
+                    const currentSpeed = Math.hypot(u.vx, u.vy);
+                    const newAngle = Math.atan2(u.vy, u.vx) + (Math.random() - 0.5) * 1.8;
+                    u.vx = Math.cos(newAngle) * currentSpeed;
+                    u.vy = Math.sin(newAngle) * currentSpeed;
+                    u.dirTimer = u.type === 'UFO_2' ? (0.8 + Math.random() * 1.4) : (1.5 + Math.random() * 2.5);
+                }
+
+                // 画面端で反対側へ移動
+                wrapPosition(u, 0);
+
+                // ミサイルとUFOの当たり判定
+                let ufoDestroyed = false;
+                for (let j = missiles.length - 1; j >= 0; j--) {
+                    const m = missiles[j];
+                    const dist = Math.hypot(u.x - m.x, u.y - m.y);
+                    if (dist < u.radius + m.radius + 2) {
+                        // 撃破！
+                        score += u.points;
+                        scoreDisplay.textContent = String(score).padStart(4, '0');
+
+                        const isRare = u.type === 'UFO_2';
+                        const effectColor = isRare ? '#e879f9' : '#34d399';
+                        sound.playHit(isRare);
+                        createExplosion(u.x, u.y, effectColor, isRare ? 70 : 45, isRare);
+                        createFloatingText(u.x, u.y, `+${u.points}`, effectColor);
+
+                        missiles.splice(j, 1);
+                        ufos.splice(i, 1);
+                        ufoDestroyed = true;
+                        break;
+                    }
+                }
+                if (ufoDestroyed) continue;
+
+                // 宇宙船とUFOの衝突判定（衝突すると即ゲームオーバー）
+                const distToShip = Math.hypot(u.x - ship.x, u.y - ship.y);
+                if (distToShip < u.radius + ship.radius - 8) {
+                    createExplosion(ship.x, ship.y, '#38bdf8', 65, true);
+                    createExplosion(u.x, u.y, '#f43f5e', 50, false);
+                    endGame('COLLISION');
+                    return;
+                }
+            }
+
+            // 8. パーティクルとテキストの更新
+            updateParticlesAndTexts(dt);
+        }
+
+        function updateParticlesAndTexts(dt) {
+            // 画面揺れとフラッシュの減衰
+            if (screenShake > 0) {
+                screenShake = Math.max(0, screenShake - dt * 40);
+            }
+            if (screenFlash > 0) {
+                screenFlash = Math.max(0, screenFlash - dt * 1.2);
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                // 空気抵抗のように少し減速させて爆発のメリハリを出す
+                p.vx *= (1 - dt * 1.8);
+                p.vy *= (1 - dt * 1.8);
+                if (p.rotSpeed) p.angle += p.rotSpeed * dt;
+                p.life -= dt;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+            for (let i = shockwaves.length - 1; i >= 0; i--) {
+                const sw = shockwaves[i];
+                sw.life -= dt;
+                const progress = 1 - Math.max(0, sw.life / sw.maxLife);
+                // イージングで素早く広がるリング
+                sw.radius = sw.maxRadius * (1 - Math.pow(1 - progress, 3));
+                if (sw.life <= 0) shockwaves.splice(i, 1);
+            }
+            for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                const ft = floatingTexts[i];
+                ft.y -= 45 * dt;
+                ft.life -= dt;
+                if (ft.life <= 0) floatingTexts.splice(i, 1);
+            }
+        }
+
+        /**
+         * 宇宙船の描画関数（画面端でのスムーズなワープ表示のため9方向ラップ描画に対応）
+         */
+        function drawShipShape(x, y, angle, isBoosting) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.scale(2, 2); // 宇宙船の描画サイズを2倍に拡大
+
+            // ベクタースキャン風の宇宙船（Computer Spaceのドット＆ベクター感を融合）
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 1.5;
+            ctx.shadowColor = '#38bdf8';
+            ctx.shadowBlur = 10;
+
+            ctx.beginPath();
+            ctx.moveTo(16, 0);      // 機首先端
+            ctx.lineTo(-12, -11);   // 左翼端
+            ctx.lineTo(-7, -4);     // 左内側
+            ctx.lineTo(-7, 4);      // 右内側
+            ctx.lineTo(-12, 11);    // 右翼端
+            ctx.closePath();
+            ctx.stroke();
+
+            // コックピットコア
+            ctx.fillStyle = '#bae6fd';
+            ctx.beginPath();
+            ctx.arc(2, 0, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // スラスター炎（常時前進しているため小さな炎を出し、Rキー押下時は大きな炎にする）
+            const flameLength = isBoosting ? (18 + Math.random() * 10) : (9 + Math.random() * 4);
+            ctx.strokeStyle = isBoosting ? '#fbbf24' : '#0284c7';
+            ctx.shadowColor = isBoosting ? '#fbbf24' : '#38bdf8';
+            ctx.lineWidth = isBoosting ? 1.8 : 1.2;
+
+            ctx.beginPath();
+            ctx.moveTo(-8, -4);
+            ctx.lineTo(-8 - flameLength, 0);
+            ctx.lineTo(-8, 4);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        /**
+         * UFOの描画関数
+         * UFO_1 (10点): エメラルドグリーンのクラシックな円盤型
+         * UFO_2 (50点): マゼンタピンクの鋭角な高得点ターゲット型
+         */
+        function drawUFOShape(u) {
+            ctx.save();
+            ctx.translate(u.x, u.y);
+            ctx.scale(2, 2); // UFOの描画サイズを2倍に拡大
+
+            if (u.type === 'UFO_1') {
+                // UFO_1: 10点
+                ctx.strokeStyle = '#34d399';
+                ctx.shadowColor = '#34d399';
+                ctx.shadowBlur = 10;
+                ctx.lineWidth = 1.4;
+
+                // ドーム部分
+                ctx.beginPath();
+                ctx.arc(0, -3, 8, Math.PI, 0);
+                ctx.stroke();
+
+                // 円盤ボディ
+                ctx.beginPath();
+                ctx.ellipse(0, 1, 18, 6, 0, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // 点滅する内部ライト（Computer Spaceの特徴的なドット表現）
+                ctx.fillStyle = '#a7f3d0';
+                for (let i = -1; i <= 1; i++) {
+                    const blink = Math.sin(u.animPhase + i * 1.5) > 0;
+                    if (blink) {
+                        ctx.beginPath();
+                        ctx.arc(i * 7, 1, 1.8, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            } else {
+                // UFO_2: 50点 (レア・高速)
+                ctx.strokeStyle = '#e879f9';
+                ctx.shadowColor = '#e879f9';
+                ctx.shadowBlur = 12;
+                ctx.lineWidth = 1.5;
+
+                // 鋭角なダイヤモンドソーサー形状
+                ctx.beginPath();
+                ctx.moveTo(-16, 0);
+                ctx.lineTo(-7, -8);
+                ctx.lineTo(7, -8);
+                ctx.lineTo(16, 0);
+                ctx.lineTo(7, 8);
+                ctx.lineTo(-7, 8);
+                ctx.closePath();
+                ctx.stroke();
+
+                // 中央ブリッジライン
+                ctx.beginPath();
+                ctx.moveTo(-16, 0);
+                ctx.lineTo(16, 0);
+                ctx.stroke();
+
+                // コアの点滅
+                ctx.fillStyle = '#fdf4ff';
+                const pulseRadius = 2.5 + Math.sin(u.animPhase * 2) * 1.2;
+                ctx.beginPath();
+                ctx.arc(0, 0, pulseRadius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        /**
+         * メイン描画処理
+         */
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            // 爆発時の画面シェイク演出
+            if (screenShake > 0) {
+                const dx = (Math.random() - 0.5) * screenShake * 2;
+                const dy = (Math.random() - 0.5) * screenShake * 2;
+                ctx.translate(dx, dy);
+            }
+
+            // 1. 背景の星を描画
+            const now = performance.now() * 0.001;
+            for (const s of stars) {
+                const currentAlpha = s.alpha * (0.6 + 0.4 * Math.sin(now * s.blinkSpeed + s.phase));
+                ctx.fillStyle = `rgba(186, 230, 253, ${currentAlpha})`;
+                ctx.fillRect(s.x, s.y, s.size, s.size);
+            }
+
+            // 2. UFOの描画（画面端での切れ目をなくすため端付近では反対側にも描画）
+            for (const u of ufos) {
+                drawUFOShape(u);
+            }
+
+            // 3. ミサイルの描画
+            ctx.save();
+            ctx.fillStyle = '#fb7185';
+            ctx.shadowColor = '#f43f5e';
+            ctx.shadowBlur = 8;
+            for (const m of missiles) {
+                ctx.beginPath();
+                ctx.arc(m.x, m.y, m.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // 4. プレイヤー宇宙船の描画（プレイ中・カウントダウン中・タイトル待機中）
+            if (gameState !== 'ENDED') {
+                drawShipShape(ship.x, ship.y, ship.angle, inputState.boost);
+
+                // 画面の上下左右の境界をまたいでいる瞬間、反対側にも宇宙船を描画して滑らかにワープさせる
+                const r = ship.radius + 4;
+                if (ship.x < r) drawShipShape(ship.x + canvas.width, ship.y, ship.angle, inputState.boost);
+                if (ship.x > canvas.width - r) drawShipShape(ship.x - canvas.width, ship.y, ship.angle, inputState.boost);
+                if (ship.y < r) drawShipShape(ship.x, ship.y + canvas.height, ship.angle, inputState.boost);
+                if (ship.y > canvas.height - r) drawShipShape(ship.x, ship.y - canvas.height, ship.angle, inputState.boost);
+            }
+
+            // 5. 衝撃波リング（ショックウェーブ）の描画
+            for (const sw of shockwaves) {
+                ctx.save();
+                const alpha = Math.max(0, sw.life / sw.maxLife);
+                ctx.globalAlpha = alpha;
+                ctx.strokeStyle = sw.color;
+                ctx.shadowColor = sw.color;
+                ctx.shadowBlur = 14;
+                ctx.lineWidth = sw.lineWidth * alpha;
+                ctx.beginPath();
+                ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // 6. 爆発パーティクル＆ベクター破片の描画
+            for (const p of particles) {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+                ctx.fillStyle = p.color;
+                ctx.strokeStyle = p.color;
+                ctx.shadowColor = p.color;
+                ctx.shadowBlur = 10;
+                if (p.isLine) {
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.angle);
+                    ctx.lineWidth = 2.2;
+                    ctx.beginPath();
+                    ctx.moveTo(-p.size / 2, 0);
+                    ctx.lineTo(p.size / 2, 0);
+                    ctx.stroke();
+                } else {
+                    ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+                }
+                ctx.restore();
+            }
+
+            // 7. スコアポップアップテキストの描画
+            for (const ft of floatingTexts) {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, ft.life / ft.maxLife);
+                ctx.font = ft.text === 'GO!' ? '36px "Press Start 2P", monospace' : '16px "Press Start 2P", monospace';
+                ctx.fillStyle = ft.color;
+                ctx.shadowColor = ft.color;
+                ctx.shadowBlur = 10;
+                ctx.textAlign = 'center';
+                ctx.fillText(ft.text, ft.x, ft.y);
+                ctx.restore();
+            }
+
+            // 8. カウントダウン（3, 2, 1）の描画
+            if (gameState === 'COUNTDOWN') {
+                const num = Math.ceil(countdownTimer);
+                const frac = countdownTimer - Math.floor(countdownTimer);
+                const scale = 1.0 + frac * 0.45;
+
+                ctx.save();
+                ctx.translate(canvas.width / 2, canvas.height / 2 - 70);
+                ctx.scale(scale, scale);
+                ctx.font = '56px "Press Start 2P", monospace';
+                ctx.fillStyle = '#38bdf8';
+                ctx.shadowColor = '#38bdf8';
+                ctx.shadowBlur = 20;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(String(num), 0, 0);
+                ctx.restore();
+
+                ctx.save();
+                ctx.font = '14px "Press Start 2P", monospace';
+                ctx.fillStyle = '#bae6fd';
+                ctx.shadowColor = '#38bdf8';
+                ctx.shadowBlur = 8;
+                ctx.textAlign = 'center';
+                ctx.fillText('GET READY!', canvas.width / 2, canvas.height / 2 + 65);
+                ctx.restore();
+            }
+
+            // 9. 爆発時の画面フラッシュ演出
+            if (screenFlash > 0) {
+                ctx.save();
+                ctx.globalAlpha = screenFlash;
+                ctx.fillStyle = screenFlashColor;
+                ctx.fillRect(-20, -20, canvas.width + 40, canvas.height + 40);
+                ctx.restore();
+            }
+
+            ctx.restore();
+        }
+
+        /**
+         * ゲームループ
+         */
+        function gameLoop(timestamp) {
+            const dt = Math.min((timestamp - lastFrameTime) / 1000, 0.1);
+            lastFrameTime = timestamp;
+
+            update(dt);
+            draw();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ウィンドウ読み込み完了時に初期化＆アニメーションループ開始
+        window.onload = function () {
+            resizeCanvas();
+            lastFrameTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>
